@@ -132,24 +132,31 @@ fun JikokuYomiMainScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { _ -> }
 
+    val handleImported: (SavedVoicePack?) -> Unit = { pack ->
+        if (pack != null) {
+            packs = library.getAllPacks()
+            val updated = settings.copy(
+                defaultVoiceSource = VoiceSource.VOICE_PACK,
+                defaultPackId = pack.id
+            )
+            settings = updated
+            onSettingsChanged(updated)
+            Toast.makeText(context, "「${pack.name}」を取り込みました (${pack.fileCount}ファイル)", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "有効な音声ファイル(t0715.wav等)が見つかりませんでした", Toast.LENGTH_LONG).show()
+        }
+    }
+
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
-        if (uri != null) {
-            val pack = library.importPack(uri)
-            if (pack != null) {
-                packs = library.getAllPacks()
-                val updated = settings.copy(
-                    defaultVoiceSource = VoiceSource.VOICE_PACK,
-                    defaultPackId = pack.id
-                )
-                settings = updated
-                onSettingsChanged(updated)
-                Toast.makeText(context, "「${pack.name}」を取り込みました (${pack.fileCount}ファイル)", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "有効な音声ファイル(t0715.wav等)が見つかりませんでした", Toast.LENGTH_LONG).show()
-            }
-        }
+        if (uri != null) handleImported(library.importPack(uri))
+    }
+
+    val zipPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) handleImported(library.importZip(uri))
     }
 
     LaunchedEffect(Unit) {
@@ -388,7 +395,15 @@ fun JikokuYomiMainScreen(
                     ) {
                         Icon(Icons.Default.FolderOpen, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("新しいボイスパックを取り込む")
+                        Text("フォルダから取り込む")
+                    }
+                    OutlinedButton(
+                        onClick = { zipPickerLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.FolderOpen, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("zipから取り込む")
                     }
                 }
             }

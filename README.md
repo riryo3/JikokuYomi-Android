@@ -7,7 +7,8 @@ Let your favorite character say anything you like, every 15 minutes. The app pla
 
 ## ボイスパック(音声ファイル)
 
-音声ファイルを入れたフォルダを、アプリの「新しいボイスパックを取り込む」で選びます。
+音声ファイルを入れたフォルダ、またはそのzipを、アプリの「フォルダから取り込む」「zipから取り込む」で選びます。
+zipの中にフォルダがあっても読みます。zipの名前が、パックの名前になります。
 
 ### ファイル形式
 

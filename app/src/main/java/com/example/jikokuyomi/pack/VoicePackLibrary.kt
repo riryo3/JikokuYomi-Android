@@ -179,6 +179,72 @@ class VoicePackLibrary(private val context: Context) {
         )
     }
 
+    /** zip ファイルからボイスパックを取り込む。zip内のフォルダ階層は無視する。 */
+    fun importZip(zipUri: Uri): SavedVoicePack? {
+        val packId = "pack_" + UUID.randomUUID().toString().take(8)
+        val packFolder = File(rootDir, packId).apply { mkdirs() }
+        val metadataFile = File(packFolder, "pack.json")
+        val zipName = DocumentFile.fromSingleUri(context, zipUri)?.name
+            ?.substringBeforeLast('.')
+        var detectedName: String? = null
+        var importedCount = 0
+
+        try {
+            context.contentResolver.openInputStream(zipUri)?.use { raw ->
+                java.util.zip.ZipInputStream(raw).use { zip ->
+                    while (true) {
+                        val entry = zip.nextEntry ?: break
+                        if (entry.isDirectory) continue
+                        if (entry.name.contains("__MACOSX")) continue
+                        val fileName = entry.name.substringAfterLast('/').lowercase(Locale.US)
+                        if (fileName.startsWith(".")) continue
+
+                        if (fileName == "pack.json") {
+                            val text = zip.readBytes().toString(Charsets.UTF_8)
+                            try {
+                                val json = JSONObject(text)
+                                if (json.has("name")) detectedName = json.getString("name")
+                            } catch (_: Exception) {}
+                            metadataFile.writeText(text)
+                            continue
+                        }
+
+                        val dot = fileName.lastIndexOf('.')
+                        if (dot == -1) continue
+                        val base = fileName.substring(0, dot)
+                        val ext = fileName.substring(dot + 1)
+                        if (!SUPPORTED_EXTENSIONS.contains(ext)) continue
+                        val isSlot = base.matches(Regex("^t(0[0-9]|1[0-9]|2[0-3])(00|15|30|45)$"))
+                        val isMinuteOnly = base.matches(Regex("^m(15|30|45)$"))
+                        if (!isSlot && !isMinuteOnly) continue
+
+                        FileOutputStream(File(packFolder, "$base.$ext")).use { out -> zip.copyTo(out) }
+                        importedCount++
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            packFolder.deleteRecursively()
+            return null
+        }
+
+        if (importedCount == 0) {
+            packFolder.deleteRecursively()
+            return null
+        }
+
+        val finalName = detectedName ?: zipName ?: "ボイスパック ${packId.takeLast(4)}"
+        if (!metadataFile.exists()) {
+            val meta = JSONObject().apply {
+                put("id", packId)
+                put("name", finalName)
+                put("fileCount", importedCount)
+            }
+            metadataFile.writeText(meta.toString())
+        }
+        return SavedVoicePack(id = packId, name = finalName, fileCount = importedCount, dir = packFolder)
+    }
+
     fun deletePack(packId: String) {
         val folder = File(rootDir, packId)
         if (folder.exists()) {
