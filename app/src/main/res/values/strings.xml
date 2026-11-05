@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">時刻読み</string>
+    <string name="chime_channel_name">時報通知</string>
+    <string name="chime_channel_description">指定時刻に通知と音声でお知らせします</string>
+</resources>
