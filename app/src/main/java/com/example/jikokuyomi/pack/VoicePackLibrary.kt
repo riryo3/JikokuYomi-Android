@@ -90,12 +90,26 @@ class VoicePackLibrary(private val context: Context) {
      * 話者IDから再生する音声ファイルを決める。
      * RANDOM_ID のときは、対象パック（空なら全パック）のうち、その時刻のファイルがあるものから1つ選ぶ。
      */
-    fun pickAudioFile(speakerId: String, slot: Slot, minuteOnly: Boolean, randomPool: Set<String>): File? {
+    fun pickAudioFile(
+        speakerId: String,
+        slot: Slot,
+        minuteOnly: Boolean,
+        randomPool: Set<String>,
+        remember: Boolean = false
+    ): File? {
         if (speakerId != RANDOM_ID) return getAudioFileForSlot(speakerId, slot, minuteOnly)
         val allIds = getAllPacks().map { it.id }
         val poolIds = if (randomPool.isEmpty()) allIds else allIds.filter { it in randomPool }
-        val files = poolIds.mapNotNull { getAudioFileForSlot(it, slot, minuteOnly) }
-        return files.randomOrNull()
+        val candidates = poolIds.mapNotNull { id -> getAudioFileForSlot(id, slot, minuteOnly)?.let { id to it } }
+        if (candidates.isEmpty()) return null
+
+        // 前回と同じ話者は続けて選ばない（候補が1つだけのときは、そのまま使う）
+        val prefs = context.getSharedPreferences("jikokuyomi_random", Context.MODE_PRIVATE)
+        val last = prefs.getString("lastPackId", null)
+        val others = candidates.filter { it.first != last }
+        val chosen = (if (others.isNotEmpty()) others else candidates).random()
+        if (remember) prefs.edit().putString("lastPackId", chosen.first).apply()
+        return chosen.second
     }
 
     fun importPack(folderUri: Uri, fallbackName: String? = null): SavedVoicePack? {
