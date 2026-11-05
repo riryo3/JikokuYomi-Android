@@ -17,6 +17,7 @@ class ChimePreferences(context: Context) {
         val omitMode = OmitMode.valueOf(prefs.getString("omitMode", OmitMode.SPEAK_ALL.name) ?: OmitMode.SPEAK_ALL.name)
         val voiceSource = VoiceSource.valueOf(prefs.getString("defaultVoiceSource", VoiceSource.TTS.name) ?: VoiceSource.TTS.name)
         val defaultPackId = prefs.getString("defaultPackId", null)
+        val randomPackIds = prefs.getStringSet("randomPackIds", emptySet())?.toSet() ?: emptySet()
         val language = SpeechLanguage.valueOf(prefs.getString("language", SpeechLanguage.JAPANESE.name) ?: SpeechLanguage.JAPANESE.name)
         val speechRate = prefs.getFloat("speechRate", 1.0f)
 
@@ -66,6 +67,7 @@ class ChimePreferences(context: Context) {
             omitMode = omitMode,
             defaultVoiceSource = voiceSource,
             defaultPackId = defaultPackId,
+            randomPackIds = randomPackIds,
             language = language,
             speechRate = speechRate,
             japaneseStyle = JapaneseStyle(
@@ -95,6 +97,7 @@ class ChimePreferences(context: Context) {
             putString("omitMode", settings.omitMode.name)
             putString("defaultVoiceSource", settings.defaultVoiceSource.name)
             putString("defaultPackId", settings.defaultPackId)
+            putStringSet("randomPackIds", settings.randomPackIds)
             putString("language", settings.language.name)
             putFloat("speechRate", settings.speechRate)
 

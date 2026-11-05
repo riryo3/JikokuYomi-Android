@@ -21,6 +21,7 @@ class VoicePackLibrary(private val context: Context) {
     private val rootDir = File(context.filesDir, "packs").apply { mkdirs() }
 
     companion object {
+        const val RANDOM_ID = "__random__"
         val SUPPORTED_EXTENSIONS = setOf("wav", "mp3", "m4a", "aac", "flac", "ogg")
 
         fun slotKey(slot: Slot): String {
@@ -83,6 +84,18 @@ class VoicePackLibrary(private val context: Context) {
     fun getAudioFileForSlot(packId: String, slot: Slot, minuteOnly: Boolean): File? {
         val key = if (minuteOnly) minuteKey(slot.minute) else slotKey(slot)
         return getAudioFile(packId, key)
+    }
+
+    /**
+     * 話者IDから再生する音声ファイルを決める。
+     * RANDOM_ID のときは、対象パック（空なら全パック）のうち、その時刻のファイルがあるものから1つ選ぶ。
+     */
+    fun pickAudioFile(speakerId: String, slot: Slot, minuteOnly: Boolean, randomPool: Set<String>): File? {
+        if (speakerId != RANDOM_ID) return getAudioFileForSlot(speakerId, slot, minuteOnly)
+        val allIds = getAllPacks().map { it.id }
+        val poolIds = if (randomPool.isEmpty()) allIds else allIds.filter { it in randomPool }
+        val files = poolIds.mapNotNull { getAudioFileForSlot(it, slot, minuteOnly) }
+        return files.randomOrNull()
     }
 
     fun importPack(folderUri: Uri, fallbackName: String? = null): SavedVoicePack? {

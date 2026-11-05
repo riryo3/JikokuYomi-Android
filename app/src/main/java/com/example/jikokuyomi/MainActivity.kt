@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                             val forceTts = (speakerPackId == "__tts__" || (speakerPackId == null && settings.defaultVoiceSource == VoiceSource.TTS))
 
                             val audioFile = if (!forceTts && speakerPackId != null) {
-                                library.getAudioFileForSlot(speakerPackId, slot, minuteOnly)
+                                library.pickAudioFile(speakerPackId, slot, minuteOnly, settings.randomPackIds)
                             } else {
                                 null
                             }
@@ -257,7 +257,7 @@ fun JikokuYomiMainScreen(
                         }
                     }
                     Text(
-                        "VOICEVOXや録音フォルダを自由に追加して、キャラクターを切り替えられます",
+                        "好きな音声ファイルのフォルダを追加して、キャラクターを切り替えられます。「ランダム」を選ぶと、毎回ちがうパックで喋ります",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -293,6 +293,33 @@ fun JikokuYomiMainScreen(
                         Text("標準TTS (Google音声合成)", fontSize = 14.sp)
                     }
 
+                    // Random option
+                    val randomSelected = settings.defaultPackId == VoicePackLibrary.RANDOM_ID
+                    val selectRandom = {
+                        val updated = settings.copy(
+                            defaultVoiceSource = VoiceSource.VOICE_PACK,
+                            defaultPackId = VoicePackLibrary.RANDOM_ID
+                        )
+                        settings = updated
+                        onSettingsChanged(updated)
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { selectRandom() }.padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(selected = randomSelected, onClick = { selectRandom() })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("ランダム（複数パック）", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                if (randomSelected) "チェックを入れたパックから、毎回ひとつ選んで喋ります（全部オフなら全パック）"
+                                else "選ぶと、毎回ちがうパックで喋ります",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
                     // Registered Voice Packs
                     packs.forEach { pack ->
                         val isSelected = settings.defaultVoiceSource == VoiceSource.VOICE_PACK && settings.defaultPackId == pack.id
@@ -300,7 +327,7 @@ fun JikokuYomiMainScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
+                                .clickable(enabled = !randomSelected) {
                                     val updated = settings.copy(
                                         defaultVoiceSource = VoiceSource.VOICE_PACK,
                                         defaultPackId = pack.id
@@ -310,7 +337,17 @@ fun JikokuYomiMainScreen(
                                 }
                                 .padding(vertical = 4.dp)
                         ) {
-                            RadioButton(
+                            if (randomSelected) {
+                                Checkbox(
+                                    checked = pack.id in settings.randomPackIds,
+                                    onCheckedChange = { checked ->
+                                        val pool = if (checked) settings.randomPackIds + pack.id else settings.randomPackIds - pack.id
+                                        val updated = settings.copy(randomPackIds = pool)
+                                        settings = updated
+                                        onSettingsChanged(updated)
+                                    }
+                                )
+                            } else RadioButton(
                                 selected = isSelected,
                                 onClick = {
                                     val updated = settings.copy(
@@ -332,11 +369,12 @@ fun JikokuYomiMainScreen(
                             IconButton(onClick = {
                                 library.deletePack(pack.id)
                                 packs = library.getAllPacks()
+                                var updated = settings.copy(randomPackIds = settings.randomPackIds - pack.id)
                                 if (settings.defaultPackId == pack.id) {
-                                    val updated = settings.copy(defaultPackId = null, defaultVoiceSource = VoiceSource.TTS)
-                                    settings = updated
-                                    onSettingsChanged(updated)
+                                    updated = updated.copy(defaultPackId = null, defaultVoiceSource = VoiceSource.TTS)
                                 }
+                                settings = updated
+                                onSettingsChanged(updated)
                             }) {
                                 Icon(Icons.Default.Delete, contentDescription = "削除", tint = MaterialTheme.colorScheme.error)
                             }
@@ -413,6 +451,7 @@ fun JikokuYomiMainScreen(
                         val speakerLabel = when (custom?.speakerPackId) {
                             null -> "デフォルト"
                             "__tts__" -> "TTS"
+            VoicePackLibrary.RANDOM_ID -> "ランダム"
                             else -> packs.find { it.id == custom.speakerPackId }?.name ?: "カスタムパック"
                         }
 
@@ -663,6 +702,17 @@ fun SlotCustomizationDialog(
                         RadioButton(selected = speakerPackId == "__tts__", onClick = { speakerPackId = "__tts__" })
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("標準TTS (Google音声合成)", fontSize = 13.sp)
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { speakerPackId = VoicePackLibrary.RANDOM_ID }
+                    ) {
+                        RadioButton(selected = speakerPackId == VoicePackLibrary.RANDOM_ID, onClick = { speakerPackId = VoicePackLibrary.RANDOM_ID })
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("ランダム（複数パック）", fontSize = 13.sp)
                     }
 
                     packs.forEach { pack ->

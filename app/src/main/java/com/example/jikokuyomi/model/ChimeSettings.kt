@@ -38,7 +38,8 @@ data class ChimeSettings(
     val interval: Int = 15,                // 15, 30, 60
     val omitMode: OmitMode = OmitMode.SPEAK_ALL,
     val defaultVoiceSource: VoiceSource = VoiceSource.TTS,
-    val defaultPackId: String? = null,    // 選択中のデフォルトボイスパックID
+    val defaultPackId: String? = null,    // 選択中のデフォルトボイスパックID（"__random__" ならランダム）
+    val randomPackIds: Set<String> = emptySet(), // ランダム再生の対象パック（空なら全パック）
     val language: SpeechLanguage = SpeechLanguage.JAPANESE,
     val speechRate: Float = 1.0f,
     val japaneseStyle: JapaneseStyle = JapaneseStyle(),

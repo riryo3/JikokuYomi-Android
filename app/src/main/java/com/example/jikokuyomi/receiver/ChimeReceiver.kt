@@ -71,7 +71,7 @@ class ChimeReceiver : BroadcastReceiver() {
 
         val library = VoicePackLibrary(context)
         val audioFile = if (!forceTts && chosenSpeaker != null) {
-            library.getAudioFileForSlot(chosenSpeaker, slot, minuteOnly)
+            library.pickAudioFile(chosenSpeaker, slot, minuteOnly, settings.randomPackIds)
         } else {
             null
         }
