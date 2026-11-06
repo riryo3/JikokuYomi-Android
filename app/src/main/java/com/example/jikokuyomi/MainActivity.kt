@@ -657,6 +657,30 @@ fun JikokuYomiMainScreen(
                     }
                 }
             }
+
+            // Card 6: 開発を応援する
+            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("開発を応援する", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "このアプリは無料です。気に入ったら、カンパをいただけるとうれしいです。機能は変わりません。",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { uriHandler.openUri("https://ofuse.me/ryotasoftware") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("OFUSE で応援する") }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedButton(
+                        onClick = { uriHandler.openUri("https://buymeacoffee.com/ryota_software") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Buy Me a Coffee") }
+                }
+            }
         }
     }
 

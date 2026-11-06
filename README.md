@@ -62,6 +62,13 @@ Android 8.0 以上。
 # app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## 開発を応援する
+
+無料のアプリです。気に入ったら、カンパをいただけるとうれしいです(機能は変わりません)。
+
+- [OFUSE](https://ofuse.me/ryotasoftware)
+- [Buy Me a Coffee](https://buymeacoffee.com/ryota_software)
+
 ## ライセンス
 
 MIT License
