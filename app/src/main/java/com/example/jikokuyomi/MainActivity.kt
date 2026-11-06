@@ -348,7 +348,7 @@ fun JikokuYomiMainScreen(
                             Text("ランダム（複数パック）", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                             Text(
                                 if (randomSelected) "チェックを入れたパックを、順番にばらばらに使います（全部オフなら全パック）"
-                                else "選ぶと、毎回ちがうパックで喋ります",
+                                else "選ぶと、毎回ちがうパックで喋ります。テスト再生と実際の時報では、使用するパックが変わることがあります",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
