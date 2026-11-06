@@ -124,6 +124,7 @@ fun JikokuYomiMainScreen(
     var settings by remember { mutableStateOf(prefs.loadSettings()) }
     var packs by remember { mutableStateOf(library.getAllPacks()) }
     var editingSlot by remember { mutableStateOf<Slot?>(null) }
+    var packToDelete by remember { mutableStateOf<SavedVoicePack?>(null) }
     var isBatteryOptIgnored by remember {
         mutableStateOf(BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context))
     }
@@ -157,6 +158,33 @@ fun JikokuYomiMainScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) handleImported(library.importZip(uri))
+    }
+
+    packToDelete?.let { target ->
+        AlertDialog(
+            onDismissRequest = { packToDelete = null },
+            title = { Text("このパックを削除しますか?") },
+            text = { Text("「${target.name}」(${target.fileCount}ファイル)を、アプリから削除します。元のファイルは消えません。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    library.deletePack(target.id)
+                    packs = library.getAllPacks()
+                    var updated = settings.copy(randomPackIds = settings.randomPackIds - target.id)
+                    if (settings.defaultPackId == target.id) {
+                        updated = updated.copy(defaultPackId = null, defaultVoiceSource = VoiceSource.TTS)
+                    }
+                    // 時刻ごとの設定で、このパックを指定していたものは「デフォルトに従う」に戻す
+                    val fixed = updated.customizations.mapValues { (_, c) ->
+                        if (c.speakerPackId == target.id) c.copy(speakerPackId = null) else c
+                    }
+                    updated = updated.copy(customizations = fixed)
+                    settings = updated
+                    onSettingsChanged(updated)
+                    packToDelete = null
+                }) { Text("削除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { packToDelete = null }) { Text("キャンセル") } }
+        )
     }
 
     LaunchedEffect(Unit) {
@@ -391,16 +419,7 @@ fun JikokuYomiMainScreen(
                             IconButton(onClick = { onPlayPackSample(pack) }) {
                                 Icon(Icons.Default.VolumeUp, contentDescription = "試聴")
                             }
-                            IconButton(onClick = {
-                                library.deletePack(pack.id)
-                                packs = library.getAllPacks()
-                                var updated = settings.copy(randomPackIds = settings.randomPackIds - pack.id)
-                                if (settings.defaultPackId == pack.id) {
-                                    updated = updated.copy(defaultPackId = null, defaultVoiceSource = VoiceSource.TTS)
-                                }
-                                settings = updated
-                                onSettingsChanged(updated)
-                            }) {
+                            IconButton(onClick = { packToDelete = pack }) {
                                 Icon(Icons.Default.Delete, contentDescription = "削除", tint = MaterialTheme.colorScheme.error)
                             }
                         }
