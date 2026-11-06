@@ -319,11 +319,29 @@ fun JikokuYomiMainScreen(
                         Column {
                             Text("ランダム（複数パック）", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                             Text(
-                                if (randomSelected) "チェックを入れたパックから、毎回ひとつ選んで喋ります（全部オフなら全パック）"
+                                if (randomSelected) "チェックを入れたパックを、順番にばらばらに使います（全部オフなら全パック）"
                                 else "選ぶと、毎回ちがうパックで喋ります",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+
+                    if (randomSelected && packs.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth().padding(start = 8.dp, bottom = 4.dp)
+                        ) {
+                            OutlinedButton(onClick = {
+                                val updated = settings.copy(randomPackIds = packs.map { it.id }.toSet())
+                                settings = updated
+                                onSettingsChanged(updated)
+                            }) { Text("全部選ぶ", fontSize = 13.sp) }
+                            OutlinedButton(onClick = {
+                                val updated = settings.copy(randomPackIds = emptySet())
+                                settings = updated
+                                onSettingsChanged(updated)
+                            }) { Text("全部外す", fontSize = 13.sp) }
                         }
                     }
 

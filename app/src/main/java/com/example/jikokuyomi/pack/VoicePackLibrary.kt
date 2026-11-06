@@ -103,12 +103,29 @@ class VoicePackLibrary(private val context: Context) {
         val candidates = poolIds.mapNotNull { id -> getAudioFileForSlot(id, slot, minuteOnly)?.let { id to it } }
         if (candidates.isEmpty()) return null
 
-        // 前回と同じ話者は続けて選ばない（候補が1つだけのときは、そのまま使う）
+        // 袋方式: 全パックを袋に入れて1つずつ引き、引いたら戻さない。空になったら入れ直す。
+        // → 順番は毎回ランダムだが、全パックが同じ回数ずつ選ばれる。入れ直した直後に、前回と同じパックは続けて引かない。
         val prefs = context.getSharedPreferences("jikokuyomi_random", Context.MODE_PRIVATE)
         val last = prefs.getString("lastPackId", null)
-        val others = candidates.filter { it.first != last }
-        val chosen = (if (others.isNotEmpty()) others else candidates).random()
-        if (remember) prefs.edit().putString("lastPackId", chosen.first).apply()
+        val bag = (prefs.getString("bag", "") ?: "").split(",").filter { it.isNotEmpty() }.toMutableList()
+        bag.retainAll(poolIds.toSet())
+
+        var eligible = candidates.filter { it.first in bag }
+        if (eligible.isEmpty()) {
+            // 袋を入れ直す
+            bag.clear()
+            bag.addAll(poolIds)
+            val fresh = candidates.filter { it.first != last }
+            eligible = if (fresh.isNotEmpty()) fresh else candidates
+        }
+        val chosen = eligible.random()
+        if (remember) {
+            bag.remove(chosen.first)
+            prefs.edit()
+                .putString("lastPackId", chosen.first)
+                .putString("bag", bag.joinToString(","))
+                .apply()
+        }
         return chosen.second
     }
 
